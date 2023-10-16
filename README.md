@@ -9,3 +9,5 @@ to run you can use script
 ./scripts/convert.sh
 ```
 
+### **_If you want to run this program you will need Java8 installed_**
+
