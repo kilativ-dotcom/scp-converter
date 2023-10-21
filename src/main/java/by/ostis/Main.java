@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 public class Main {
     private static final long INITIAL_SLEEP = 1000;
-    private static final long PRESS_PRESS_SLEEP = 20;
+    private static final long PRESS_PRESS_SLEEP = 40;
     private static final long PRESS_RELEASE_SLEEP = 20;
     private static final long OPEN_PASTE_SLEEP = 150;
     private static final long BEFORE_ENTER_SLEEP = 100;
