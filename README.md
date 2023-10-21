@@ -3,8 +3,8 @@
 This is a script that walks through all gwf files in passed directories. To use this script you have to make a little preparation.
 
 1. open kbe
-2. press ctrl+n and then enter
-3. double click somewhere to create a node
+2. open any gwf file
+3. double click somewhere to create a node and then delete this node
 
 Then you can run script and immediately switch to kbe tab
 
