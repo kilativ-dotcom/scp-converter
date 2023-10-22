@@ -53,7 +53,7 @@ public class Operator {
                 '}';
     }
 
-    public String toNewFormat(String agentName, Map<String, String> sysIdToAddr, Map<String, String> addrToSysId, int numberOfTabs, Set<Operand> rrelInOperands) {
+    public String toNewFormat(String agentName, Map<String, String> sysIdToAddr, Map<String, String> addrToSysId, int numberOfTabs, Set<Operand> rrelInOperands, Map<String, String> linkAddrToContent) {
         String operatorSysId;
         if (!(addrToSysId.containsKey(addr) || sysIdToAddr.containsKey(addr))) {
             operatorSysId = Agent.createNewId(addr, ".._" + agentName + "_operator", sysIdToAddr, addrToSysId);
@@ -66,7 +66,7 @@ public class Operator {
         for (String concept : classes) {
             builder.append(tabs).append("_<- ").append(addrToSysId.get(concept)).append(";;\n");
         }
-        Set<Operand> newOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentName, sysIdToAddr, addrToSysId)).collect(Collectors.toCollection(TreeSet::new));
+        Set<Operand> newOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentName, sysIdToAddr, addrToSysId, linkAddrToContent)).collect(Collectors.toCollection(TreeSet::new));
         for (Operand operand : newOperands) {
             builder.append(operand.toNewFormat(numberOfTabs, rrelInOperands)).append(";;\n");
         }

@@ -20,6 +20,7 @@ import java.util.function.Supplier;
 public class WebSocketClient {
     private final String outputDirectory;
 
+    private final Map<String, String> linkAddrToContent = new HashMap<>();
     private final Map<String, String> systemIdtfToAddr = new HashMap<>();
     private final Map<String, String> addrToMainIdtfEn = new HashMap<>();
     private final Map<String, String> addrToMainIdtfRu = new HashMap<>();
@@ -330,6 +331,7 @@ public class WebSocketClient {
                 jsonReader.close();
                 String sysId = jsonObject.getJsonArray("payload").getJsonObject(0).getString("value");
                 if (!sysId.isEmpty()) {
+                    linkAddrToContent.put(link, "[" + sysId + "]");
                     if (source.equals(link)) {
                         systemIdtfToAddr.put("[" + sysId + "]", source);
                     } else {
@@ -430,7 +432,7 @@ public class WebSocketClient {
                 File output = new File(outputDirectory + File.separator + agentName + ".scs");
                 output.getParentFile().mkdirs();
                 try (FileWriter writer = new FileWriter(output)) {
-                    String agentCode = agents.get(agentAddr).toNewFormat(systemIdtfToAddr, addrToSystemIdtf, addrToMainIdtfEn, addrToMainIdtfRu);
+                    String agentCode = agents.get(agentAddr).toNewFormat(systemIdtfToAddr, addrToSystemIdtf, addrToMainIdtfEn, addrToMainIdtfRu, linkAddrToContent);
                     writer.write(agentCode);
                 } catch (IOException e) {
                     throw new RuntimeException(e);

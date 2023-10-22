@@ -73,9 +73,11 @@ public class Operand implements Comparable<Operand> {
         return builder.toString();
     }
 
-    public Operand replaceAddrsWithId(String agentName, Map<String, String> sysIdToAddr, Map<String, String> addrToSysId) {
+    public Operand replaceAddrsWithId(String agentName, Map<String, String> sysIdToAddr, Map<String, String> addrToSysId, Map<String, String> linkAddrToContent) {
         String operandSysId;
-        if (!(addrToSysId.containsKey(addr) || sysIdToAddr.containsKey(addr))) {
+        if (linkAddrToContent.containsKey(addr)) {
+            operandSysId = linkAddrToContent.get(addr);
+        } else if (!(addrToSysId.containsKey(addr) || sysIdToAddr.containsKey(addr))) {
             operandSysId = Agent.createNewId(addr, ".._" + agentName + "_param", sysIdToAddr, addrToSysId);
         } else {
             operandSysId = addrToSysId.getOrDefault(addr, addr);
@@ -89,7 +91,7 @@ public class Operand implements Comparable<Operand> {
             newOperand.addRole(roleSysId);
         }
         for (Operand subOperand : subOperands.values()) {
-            Operand newSuboperand = subOperand.replaceAddrsWithId(agentName, sysIdToAddr, addrToSysId);
+            Operand newSuboperand = subOperand.replaceAddrsWithId(agentName, sysIdToAddr, addrToSysId, linkAddrToContent);
             newOperand.addOperand(newSuboperand);
         }
         return newOperand;

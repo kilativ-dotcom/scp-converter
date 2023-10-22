@@ -64,13 +64,13 @@ public class Agent {
                 '}';
     }
 
-    public String toNewFormat(Map<String, String> sysIdToAddr, Map<String, String> addrToSysId, Map<String, String> enIdtf, Map<String, String> ruIdtf) {
+    public String toNewFormat(Map<String, String> sysIdToAddr, Map<String, String> addrToSysId, Map<String, String> enIdtf, Map<String, String> ruIdtf, Map<String, String> linkAddrToContent) {
         StringBuilder builder = new StringBuilder();
         if (!(addrToSysId.containsKey(addr) || sysIdToAddr.containsKey(addr))) {
             throw new RuntimeException("cannot find sys id for " + addr);
         }
         String agentSysId = addrToSysId.getOrDefault(addr, addr);
-        Set<Operand> rrelInOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentSysId, sysIdToAddr, addrToSysId)).filter(operand -> operand.getRoles().contains("rrel_in")).collect(Collectors.toSet());
+        Set<Operand> rrelInOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentSysId, sysIdToAddr, addrToSysId, linkAddrToContent)).filter(operand -> operand.getRoles().contains("rrel_in")).collect(Collectors.toSet());
         builder.append(agentSysId).append("\n")
                 .append("=> nrel_main_idtf:\n")
                 .append("\t[").append(ruIdtf.getOrDefault(sysIdToAddr.get(agentSysId), "")).append("] (* <- lang_ru;; *);\n")
@@ -84,7 +84,7 @@ public class Agent {
                 .append("_<- scp_process;\n")
                 .append("\n");
 
-        Set<Operand> newOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentSysId, sysIdToAddr, addrToSysId)).collect(Collectors.toCollection(TreeSet::new));
+        Set<Operand> newOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentSysId, sysIdToAddr, addrToSysId, linkAddrToContent)).collect(Collectors.toCollection(TreeSet::new));
         for (Operand operand : newOperands) {
             builder.append(operand.toNewFormat(0, rrelInOperands)).append(";\n");
         }
@@ -97,7 +97,7 @@ public class Agent {
                 isFirst = false;
                 builder.append("rrel_1:: ");
             }
-            builder.append(operators.get(operatorAddr).toNewFormat(agentSysId, sysIdToAddr, addrToSysId, 2, rrelInOperands)).append("\n")
+            builder.append(operators.get(operatorAddr).toNewFormat(agentSysId, sysIdToAddr, addrToSysId, 2, rrelInOperands, linkAddrToContent)).append("\n")
                     .append("\n");
         }
         builder.append("*);;\n");
