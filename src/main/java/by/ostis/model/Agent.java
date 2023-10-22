@@ -76,6 +76,7 @@ public class Agent {
                 .append("\t[").append(ruIdtf.getOrDefault(sysIdToAddr.get(agentSysId), "")).append("] (* <- lang_ru;; *);\n")
                 .append("\t[").append(enIdtf.getOrDefault(sysIdToAddr.get(agentSysId), "")).append("] (* <- lang_en;; *);\n")
                 .append("<- scp_program;\n")
+                .append("<- agent_scp_program;\n")
                 .append("-> rrel_key_sc_element: .._process1;;\n")
                 .append("\n")
                 .append(agentSysId).append(" = [*\n")
@@ -85,7 +86,7 @@ public class Agent {
 
         Set<Operand> newOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentSysId, sysIdToAddr, addrToSysId)).collect(Collectors.toCollection(TreeSet::new));
         for (Operand operand : newOperands) {
-            builder.append(operand.toNewFormat(0, rrelInOperands)).append(";;\n");
+            builder.append(operand.toNewFormat(0, rrelInOperands)).append(";\n");
         }
         builder.append("_<= nrel_decomposition_of_action:: .._actions (*\n")
                 .append("\n");
@@ -110,6 +111,7 @@ public class Agent {
                     "\t[Добавляет посещение ребра _edge и инцидентные ему вершины в маршрут _route] (* <- lang_ru;; *);\n" +
                     "\t[Add edge and vertex in path] (* <- lang_en;; *);\n" +
                     "<- scp_program;\n" +
+                    "<- agent_scp_program;\n" +
                     "-> rrel_key_sc_element: .._process1;;\n" +
                     "\n" +
                     "${agent_name} = [*\n" +
