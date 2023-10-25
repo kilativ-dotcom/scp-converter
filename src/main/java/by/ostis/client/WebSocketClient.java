@@ -27,11 +27,13 @@ public class WebSocketClient {
     private WebSocketContainer client;
     private Session session;
     private final Map<String, Agent> agents = new HashMap<>();
+    private static final List<String> errors = new LinkedList<>();
 
     public static final String TEST_AGENT = "agent_of_counting_variables_in_structure";
 
     private List<Pair<Consumer<String>, Supplier<String>>> stack = new LinkedList<>(Arrays.asList(
             keynodeResolver("agent_scp_program"),
+            keynodeResolver("scp_program"),
             keynodeResolver("call"),
             keynodeResolver("nrel_main_idtf"),
             keynodeResolver("nrel_system_identifier"),
@@ -43,11 +45,13 @@ public class WebSocketClient {
             keynodeResolver("rrel_init"),
             keynodeResolver("rrel_operators"),
             findAgents(),
+            addAgentsVerification(),
             finish()
     ));
 
     private Pair<Consumer<String>, Supplier<String>> findAgents() {
         Consumer<String> localConsumer = response -> {
+            System.out.println("findAgents::Consumer");
             String payload = getPayload(response);
             JsonReader jsonReader = Json.createReader(new StringReader(payload));
             JsonObject jsonObject = jsonReader.readObject();
@@ -59,8 +63,19 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
-            int conceptAddr = Integer.parseInt(systemIdtfToAddr.get("agent_scp_program"));
+            System.out.println("findAgents::Supplier");
+            int conceptAddr = Integer.parseInt(systemIdtfToAddr.get("scp_program"));
             return String.format(tripleTemplate, conceptAddr);
+        };
+        return new Pair<>(localConsumer, localSupplier);
+    }
+
+    private Pair<Consumer<String>, Supplier<String>> addAgentsVerification() {
+        Consumer<String> localConsumer = response -> {
+        };
+        Supplier<String> localSupplier = () -> {
+            markAgents();
+            return null;
         };
         return new Pair<>(localConsumer, localSupplier);
     }
@@ -75,9 +90,20 @@ public class WebSocketClient {
     }
 
     private Pair<Consumer<String>, Supplier<String>> putAgent(String agentAddr) {
-        Consumer<String> localConsumer = response -> { };
+        Consumer<String> localConsumer = response -> {
+            System.out.println("putAgent::Consumer"); };
         Supplier<String> localSupplier = () -> {
-            String sysId = systemIdtfToAddr.entrySet().stream().filter(entry -> entry.getValue().equals(agentAddr)).findFirst().get().getValue();
+            System.out.println("putAgent::Supplier");
+            String placeholder = "definitely no presento";
+            String sysId = systemIdtfToAddr.entrySet().stream().filter(entry -> entry.getValue().equals(agentAddr)).findFirst().orElse(new AbstractMap.SimpleEntry<>(placeholder, placeholder)).getValue();
+            if (sysId.equals(placeholder)) {
+                errors.add("cannot found sysid for addr " + agentAddr);
+                stack.remove(0);
+                stack.remove(0);
+                stack.remove(0);
+                stack.remove(0);
+                return null;
+            }
             if (!agents.containsKey(sysId)) {
                 agents.put(sysId, new Agent(sysId));
             }
@@ -89,6 +115,7 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> searchMainIdtfEn(String agentAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("searchMainIdtfEn::Consumer");
             String payload = getPayload(response);
             if (payload.length() > 2) {
                 JsonReader jsonReader = Json.createReader(new StringReader(payload));
@@ -102,6 +129,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("searchMainIdtfEn::Supplier");
             int nrelMainIdtf = Integer.parseInt(systemIdtfToAddr.get("nrel_main_idtf"));
             int langEn = Integer.parseInt(systemIdtfToAddr.get("lang_en"));
             if (addrToMainIdtfEn.containsKey(agentAddr)) {
@@ -115,6 +143,7 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> searchMainIdtfRu(String agentAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("searchMainIdtfRu::Consumer");
             String payload = getPayload(response);
             if (payload.length() > 2) {
                 JsonReader jsonReader = Json.createReader(new StringReader(payload));
@@ -128,6 +157,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("searchMainIdtfRu::Supplier");
             int nrelMainIdtf = Integer.parseInt(systemIdtfToAddr.get("nrel_main_idtf"));
             int langRu = Integer.parseInt(systemIdtfToAddr.get("lang_ru"));
             if (addrToMainIdtfRu.containsKey(agentAddr)) {
@@ -140,10 +170,8 @@ public class WebSocketClient {
     }
 
     private Pair<Consumer<String>, Supplier<String>> searchOperators(String agentAddr) {
-//        if (!agents.containsKey(agentIdtf)) {
-//            agents.put(agentIdtf, new Agent(agentIdtf));
-//        }
         Consumer<String> localConsumer = response -> {
+            System.out.println("searchOperators::Consumer");
             String agentIdtf = systemIdtfToAddr.entrySet().stream().filter(entry -> entry.getValue().equals(agentAddr)).findFirst().get().getValue();
             String payload = getPayload(response);
             JsonReader jsonReader = Json.createReader(new StringReader(payload));
@@ -158,6 +186,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("searchOperators::Supplier");
             int agentAddrInt = Integer.parseInt(agentAddr);
             int initAddr = Integer.parseInt(systemIdtfToAddr.get("rrel_init"));
             int operatorsAddr = Integer.parseInt(systemIdtfToAddr.get("rrel_operators"));
@@ -174,6 +203,7 @@ public class WebSocketClient {
 
     private void addOperatorOperandSearch(String agentIdtf, String operatorAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("addOperatorOperandSearch::Consumer");
             String payload = getPayload(response);
             JsonReader jsonReader = Json.createReader(new StringReader(payload));
             JsonObject jsonObject = jsonReader.readObject();
@@ -190,6 +220,7 @@ public class WebSocketClient {
 
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("addOperatorOperandSearch::Supplier");
             return String.format(outGoingRoleRelationTemplate, Integer.parseInt(operatorAddr));
         };
         stack.add(0, new Pair<>(localConsumer, localSupplier));
@@ -197,6 +228,7 @@ public class WebSocketClient {
 
     private void addOperatorClassesSearch(String agentIdtf, String operatorAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("addOperatorClassesSearch::Consumer");
             String payload = getPayload(response);
             JsonReader jsonReader = Json.createReader(new StringReader(payload));
             JsonObject jsonObject = jsonReader.readObject();
@@ -218,6 +250,7 @@ public class WebSocketClient {
 
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("addOperatorClassesSearch::Supplier");
             return String.format(operatorClassesTemplate, Integer.parseInt(operatorAddr));
         };
         stack.add(0, new Pair<>(localConsumer, localSupplier));
@@ -225,6 +258,7 @@ public class WebSocketClient {
 
     private void addOperandSuboperandsSearch(String agentIdtf, String operatorAddr, String operandAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("addOperandSuboperandsSearch::Consumer");
             String payload = getPayload(response);
             JsonReader jsonReader = Json.createReader(new StringReader(payload));
             JsonObject jsonObject = jsonReader.readObject();
@@ -241,6 +275,7 @@ public class WebSocketClient {
 
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("addOperandSuboperandsSearch::Supplier");
             return String.format(outGoingRoleRelationTemplate, Integer.parseInt(operandAddr));
         };
         stack.add(0, new Pair<>(localConsumer, localSupplier));
@@ -248,6 +283,7 @@ public class WebSocketClient {
 
     private void addOutgoingTransitionsSearch(String agentIdtf, String operatorAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("addOutgoingTransitionsSearch::Consumer");
             String payload = getPayload(response);
             JsonReader jsonReader = Json.createReader(new StringReader(payload));
             JsonObject jsonObject = jsonReader.readObject();
@@ -265,6 +301,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("addOutgoingTransitionsSearch::Supplier");
             return String.format(outGoingNoroleRelation, Integer.parseInt(operatorAddr));
         };
         stack.add(0, new Pair<>(localConsumer, localSupplier));
@@ -272,6 +309,7 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> searchParams(String agentAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("searchParams::Consumer");
             String agentIdtf = systemIdtfToAddr.entrySet().stream().filter(entry -> entry.getValue().equals(agentAddr)).findFirst().get().getValue();
             String payload = getPayload(response);
             if (payload.length() > 2) {
@@ -290,6 +328,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("searchParams::Supplier");
             int paramsIntAddr = Integer.parseInt(systemIdtfToAddr.get("rrel_params"));
             int agentIntAddr = Integer.parseInt(agentAddr);
             return String.format(paramTemplate, agentIntAddr, paramsIntAddr);
@@ -299,6 +338,7 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> searchSystemIdtf(String nodeAddr) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("searchSystemIdtf::Consumer");
             String payload = getPayload(response);
             if (payload.length() > 2) {
                 JsonReader jsonReader = Json.createReader(new StringReader(payload));
@@ -312,6 +352,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("searchSystemIdtf::Supplier");
             if (systemIdtfToAddr.containsValue(nodeAddr)) {
                 return null;
             }
@@ -324,6 +365,7 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> getLinkContent(String source, String link) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("getLinkContent::Consumer");
             String payload = getPayload(response);
             if (payload.length() > 2) {
                 JsonReader jsonReader = Json.createReader(new StringReader(response));
@@ -341,6 +383,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("getLinkContent::Supplier");
             if (systemIdtfToAddr.containsValue(source)) {
                 return null;
             } else {
@@ -353,6 +396,7 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> getLinkContentEn(String source, String link) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("getLinkContentEn::Consumer");
             String payload = getPayload(response);
             if (payload.length() > 2) {
                 JsonReader jsonReader = Json.createReader(new StringReader(response));
@@ -365,6 +409,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("getLinkContentEn::Supplier");
             if (addrToMainIdtfEn.get(source) != null) {
                 return null;
             } else {
@@ -377,6 +422,7 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> getLinkContentRu(String source, String link) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("getLinkContentRu::Consumer");
             String payload = getPayload(response);
             if (payload.length() > 2) {
                 JsonReader jsonReader = Json.createReader(new StringReader(response));
@@ -389,6 +435,7 @@ public class WebSocketClient {
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("getLinkContentRu::Supplier");
             if (addrToMainIdtfRu.get(source) != null) {
                 return null;
             } else {
@@ -401,21 +448,57 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> keynodeResolver(String keynode) {
         Consumer<String> localConsumer = response -> {
+            System.out.println("keynodeResolver::Consumer");
             systemIdtfToAddr.put(keynode, getAddr(response));
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("keynodeResolver::Supplier");
             return applyKeynodeTemplate(keynode);
         };
         return new Pair<>(localConsumer, localSupplier);
     }
 
+    private void markAgents() {
+        int agentProgramAddrInt = Integer.parseInt(systemIdtfToAddr.get("agent_scp_program"));
+        for (String agentAddr : agents.keySet()) {
+            Consumer<String> localConsumer = response -> {
+                System.out.println("markAgents::Consumer");
+                String payload = getPayload(response);
+                if (payload.length() > 2) {
+                    JsonReader jsonReader = Json.createReader(new StringReader(payload));
+                    JsonObject jsonObject = jsonReader.readObject();
+                    jsonReader.close();
+                    JsonArray addrs = jsonObject.getJsonArray("addrs");
+                    for (JsonValue addr : addrs) {
+                        agents.get(agentAddr).setIsAgent();
+                        break;
+                    }
+                }
+            };
+            Supplier<String> localSupplier = () -> {
+                System.out.println("markAgents::Supplier");
+                int agentAddrInt = Integer.parseInt(agentAddr);
+                return String.format(fafTripleTemplate, agentProgramAddrInt, agentAddrInt);
+            };
+            stack.add(1, new Pair<>(localConsumer, localSupplier));
+        }
+    }
+
     private Pair<Consumer<String>, Supplier<String>> finish() {
         Consumer<String> localConsumer = response -> {
+            System.out.println("finish::Consumer");
+            if (!errors.isEmpty()) {
+                System.out.println("errors:");
+                for (String error : errors) {
+                    System.out.println(error);
+                }
+            }
             synchronized (this) {
                 this.notifyAll();
             }
         };
         Supplier<String> localSupplier = () -> {
+            System.out.println("finish::Supplier");
             Map<String, String> addrToSystemIdtf = new HashMap<>();
             for (String sysId : systemIdtfToAddr.keySet()) {
                 String addr = systemIdtfToAddr.get(sysId);
@@ -425,8 +508,9 @@ public class WebSocketClient {
                 addrToSystemIdtf.put(addr, sysId);
             }
             for (String agentAddr : agents.keySet()) {
-                String agentName = systemIdtfToAddr.entrySet().stream().filter(entry -> entry.getValue().equals(agentAddr)).findFirst().get().getKey();
+                String agentName = systemIdtfToAddr.entrySet().stream().filter(entry -> entry.getValue().equals(agentAddr)).findFirst().orElse(new AbstractMap.SimpleEntry<>(null, null)).getKey();
                 if (agentName == null) {
+                    errors.add("addr " + agentAddr + " does not have sys id");
                     continue;
                 }
                 File output = new File(outputDirectory + File.separator + agentName + ".scs");
@@ -522,4 +606,5 @@ public class WebSocketClient {
     public static final String outGoingNoroleRelation = "{\"id\": 125, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 72, \"alias\": \"_operator_to_next\"}, {\"type\": \"type\", \"value\": 65, \"alias\": \"_next_operand\"}], [{\"type\": \"type\", \"value\": 1089, \"alias\": \"_norole\"}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_role_to_edge\"}, {\"type\": \"alias\", \"value\": \"_operator_to_next\"}]], \"params\": {}}}";
     public static final String mainIdtfTemplate = "{\"id\": 129, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 72, \"alias\": \"_node_to_link\"}, {\"type\": \"type\", \"value\": 66, \"alias\": \"_link\"}], [{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_rel_to_edge\"}, {\"type\": \"alias\", \"value\": \"_node_to_link\"}], [{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_lang_to_link\"}, {\"type\": \"alias\", \"value\": \"_link\"}]], \"params\": {}}}";
     public static final String tripleTemplate = "{\"id\": 135, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_edge\"}, {\"type\": \"type\", \"value\": 65, \"alias\": \"_agent\"}]], \"params\": {}}}";
+    public static final String fafTripleTemplate = "{\"id\": 139, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_edge\"}, {\"type\": \"addr\", \"value\": %d, \"alias\": \"_agent\"}]], \"params\": {}}}";
 }

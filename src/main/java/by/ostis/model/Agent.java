@@ -7,6 +7,7 @@ public class Agent {
     private final String addr;
     private final Map<String, Operand> operands;
     private final Map<String, Operator> operators;
+    private boolean isAgent = false;
 
     public Agent(String addr) {
         this(addr, new TreeMap<>(), new LinkedHashMap<>());
@@ -55,6 +56,10 @@ public class Agent {
         return operators.containsKey(id);
     }
 
+    public void setIsAgent() {
+        isAgent = true;
+    }
+
     @Override
     public String toString() {
         return "Agent{" +
@@ -75,9 +80,11 @@ public class Agent {
                 .append("=> nrel_main_idtf:\n")
                 .append("\t[").append(ruIdtf.getOrDefault(sysIdToAddr.get(agentSysId), "")).append("] (* <- lang_ru;; *);\n")
                 .append("\t[").append(enIdtf.getOrDefault(sysIdToAddr.get(agentSysId), "")).append("] (* <- lang_en;; *);\n")
-                .append("<- scp_program;\n")
-                .append("<- agent_scp_program;\n")
-                .append("-> rrel_key_sc_element: .._process1;;\n")
+                .append("<- scp_program;\n");
+                if (isAgent) {
+                    builder.append("<- agent_scp_program;\n");
+                }
+        builder.append("-> rrel_key_sc_element: .._process1;;\n")
                 .append("\n")
                 .append(agentSysId).append(" = [*\n")
                 .append(".._process1\n")
