@@ -80,7 +80,7 @@ public class Operand implements Comparable<Operand> {
         } else if (!(addrToSysId.containsKey(addr) || sysIdToAddr.containsKey(addr))) {
             operandSysId = Agent.createNewId(addr, ".._" + agentName + "_param", sysIdToAddr, addrToSysId);
         } else {
-            operandSysId = addrToSysId.getOrDefault(addr, addr);
+            operandSysId = ".." + addrToSysId.getOrDefault(addr, addr);
         }
         Operand newOperand = new Operand(operandSysId);
         for (String role : roles) {
