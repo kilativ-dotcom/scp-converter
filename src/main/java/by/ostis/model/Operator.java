@@ -59,6 +59,9 @@ public class Operator {
             operatorSysId = Agent.createNewId(addr, ".._" + agentName + "_operator", sysIdToAddr, addrToSysId);
         } else {
             operatorSysId = ".." + addrToSysId.getOrDefault(addr, addr);
+            if (operatorSysId.startsWith("....")) {
+                operatorSysId = operatorSysId.substring(2);
+            }
         }
         StringBuilder builder = new StringBuilder();
         String tabs = new String(new char[numberOfTabs]).replace('\0', '\t');
