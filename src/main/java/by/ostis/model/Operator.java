@@ -84,7 +84,10 @@ public class Operator {
             if (!(addrToSysId.containsKey(nextAddr) || sysIdToAddr.containsKey(nextAddr))) {
                 nextId = Agent.createNewId(nextAddr, ".._" + agentName + "_operator", sysIdToAddr, addrToSysId);
             } else {
-                nextId = addrToSysId.getOrDefault(nextAddr, nextAddr);
+                nextId = ".." + addrToSysId.getOrDefault(nextAddr, nextAddr);
+                if (nextId.startsWith("....")) {
+                    nextId = nextId.substring(2);
+                }
             }
             builder.append(tabs).append("_=> ").append(transitionId).append(":: ").append(nextId).append(";;\n");
         }
