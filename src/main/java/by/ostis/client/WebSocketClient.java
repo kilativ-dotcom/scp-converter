@@ -371,13 +371,15 @@ public class WebSocketClient {
                 JsonReader jsonReader = Json.createReader(new StringReader(response));
                 JsonObject jsonObject = jsonReader.readObject();
                 jsonReader.close();
-                String sysId = jsonObject.getJsonArray("payload").getJsonObject(0).getString("value");
-                if (!sysId.isEmpty()) {
-                    linkAddrToContent.put(link, "[" + sysId + "]");
-                    if (source.equals(link)) {
-                        systemIdtfToAddr.put("[" + sysId + "]", source);
-                    } else {
-                        systemIdtfToAddr.put(sysId, source);
+                if (jsonObject.get("payload").getValueType().equals(JsonValue.ValueType.ARRAY)) {
+                    String sysId = jsonObject.getJsonArray("payload").getJsonObject(0).getString("value");
+                    if (!sysId.isEmpty()) {
+                        linkAddrToContent.put(link, "[" + sysId + "]");
+                        if (source.equals(link)) {
+                            systemIdtfToAddr.put("[" + sysId + "]", source);
+                        } else {
+                            systemIdtfToAddr.put(sysId, source);
+                        }
                     }
                 }
             }
