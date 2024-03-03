@@ -100,17 +100,37 @@ public class Operand implements Comparable<Operand> {
     public String toNewFormat(int numberOfTabs, Set<Operand> rrelInOperands) {
         String tabs = new String(new char[numberOfTabs]).replace('\0', '\t');
         StringBuilder builder = new StringBuilder();
-        builder.append(tabs).append("_-> ");
-        for (String role : roles) {
-            builder.append((rrelInOperands.stream().map(Operand::getAddr).collect(Collectors.toSet()).contains(addr) && role.equals("rrel_scp_var")) ? "rrel_scp_const" : role).append(":: ");
+        Set<String> orderRelations = roles.stream().filter(role -> role.matches("rrel(_set)?_\\d+")).collect(Collectors.toCollection(TreeSet::new));
+        Set<String> nonOrderRelations = roles.stream().filter(role -> !orderRelations.contains(role)).collect(Collectors.toCollection(TreeSet::new));
+        StringBuilder nonOrderSequence = new StringBuilder();
+        for (String nonOrderRelation : nonOrderRelations) {
+            nonOrderSequence.append((rrelInOperands.stream().map(Operand::getAddr).collect(Collectors.toSet()).contains(addr) && nonOrderRelation.equals("rrel_scp_var")) ? "rrel_scp_const" : nonOrderRelation).append(":: ");
         }
-        builder.append(addr);
-        if (!subOperands.isEmpty()) {
-            builder.append(" (*\n");
-            for (Operand subOperand : new TreeSet<>(subOperands.values())) {
-                builder.append(subOperand.toNewFormat(numberOfTabs + 1, rrelInOperands)).append(";;\n");
+        int amountOfOrderRelations = orderRelations.size();
+        int processedOrderRelations = 0;
+        for (String orderRelation : orderRelations) {
+            processedOrderRelations++;
+            builder.append(tabs).append("_-> ").append(orderRelation).append(":: ").append(nonOrderSequence).append(addr);
+            if (!subOperands.isEmpty()) {
+                builder.append(" (*\n");
+                for (Operand subOperand : new TreeSet<>(subOperands.values())) {
+                    builder.append(subOperand.toNewFormat(numberOfTabs + 1, rrelInOperands)).append(";;\n");
+                }
+                builder.append(tabs).append("*)");
             }
-            builder.append(tabs).append("*)");
+            if (processedOrderRelations < amountOfOrderRelations) {
+                builder.append(";;\n");
+            }
+        }
+        if (orderRelations.isEmpty()) {
+            builder.append(tabs).append("_-> ").append(nonOrderSequence).append(addr);
+            if (!subOperands.isEmpty()) {
+                builder.append(" (*\n");
+                for (Operand subOperand : new TreeSet<>(subOperands.values())) {
+                    builder.append(subOperand.toNewFormat(numberOfTabs + 1, rrelInOperands)).append(";;\n");
+                }
+                builder.append(tabs).append("*)");
+            }
         }
         return builder.toString();
     }
