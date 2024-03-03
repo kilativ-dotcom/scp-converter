@@ -67,7 +67,15 @@ public class Operator {
         String tabs = new String(new char[numberOfTabs]).replace('\0', '\t');
         builder.append(operatorSysId).append(" (*\n");
         for (String concept : classes) {
-            builder.append(tabs).append("_<- ").append(addrToSysId.get(concept)).append(";;\n");
+            String conceptId;
+            if ("contAssign".equals(addrToSysId.get(concept))) {
+                conceptId = "varAssign";
+            } else if ("contErase".equals(addrToSysId.get(concept))) {
+                conceptId = "varErase";
+            } else {
+                conceptId = addrToSysId.get(concept);
+            }
+            builder.append(tabs).append("_<- ").append(conceptId).append(";;\n");
         }
         Set<Operand> newOperands = operands.values().stream().map(operand -> operand.replaceAddrsWithId(agentName, sysIdToAddr, addrToSysId, linkAddrToContent)).collect(Collectors.toCollection(TreeSet::new));
         for (Operand operand : newOperands) {
