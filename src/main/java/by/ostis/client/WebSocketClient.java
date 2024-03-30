@@ -35,6 +35,8 @@ public class WebSocketClient {
             keynodeResolver("agent_scp_program"),
             keynodeResolver("scp_program"),
             keynodeResolver("call"),
+            keynodeResolver("sys_gen"),
+            keynodeResolver("sys_search"),
             keynodeResolver("nrel_main_idtf"),
             keynodeResolver("nrel_system_identifier"),
             keynodeResolver("lang_en"),
@@ -91,7 +93,8 @@ public class WebSocketClient {
 
     private Pair<Consumer<String>, Supplier<String>> putAgent(String agentAddr) {
         Consumer<String> localConsumer = response -> {
-            System.out.println("putAgent::Consumer"); };
+            System.out.println("putAgent::Consumer");
+        };
         Supplier<String> localSupplier = () -> {
             System.out.println("putAgent::Supplier");
             String placeholder = "definitely no presento";
@@ -234,6 +237,10 @@ public class WebSocketClient {
             JsonObject jsonObject = jsonReader.readObject();
             jsonReader.close();
             JsonArray addrs = jsonObject.getJsonArray("addrs");
+            Set<String> classesThatRequireSecondOperandSearch = new HashSet<>(Arrays.asList(
+                    systemIdtfToAddr.get("call"),
+                    systemIdtfToAddr.get(""),
+                    systemIdtfToAddr.get("sys_search")));
             for (JsonValue addr : addrs) {
                 String classAddr = Integer.toString(addr.asJsonArray().getInt(0));
                 stack.add(0, searchSystemIdtf(classAddr));
@@ -243,6 +250,13 @@ public class WebSocketClient {
                     for (Operand operand : operands) {
                         if (operand.getRoles().contains(systemIdtfToAddr.get("rrel_2"))) {
                             addOperandSuboperandsSearch(agentIdtf, operatorAddr, operand.getAddr());
+                        }
+                    }
+                } else if (classAddr.equals(systemIdtfToAddr.get("sys_gen")) || classAddr.equals(systemIdtfToAddr.get("sys_search"))) {
+                    Collection<Operand> operands = agents.get(agentIdtf).getOperator(operatorAddr).getOperands().values();
+                    for (Operand operand : operands) {
+                        if (operand.getRoles().contains(systemIdtfToAddr.get("rrel_3"))) {
+                            addOperandDoubleSuboperandsSearch(agentIdtf, operatorAddr, operand.getAddr());
                         }
                     }
                 }
@@ -277,6 +291,38 @@ public class WebSocketClient {
         Supplier<String> localSupplier = () -> {
             System.out.println("addOperandSuboperandsSearch::Supplier");
             return String.format(outGoingRoleRelationTemplate, Integer.parseInt(operandAddr));
+        };
+        stack.add(0, new Pair<>(localConsumer, localSupplier));
+    }
+
+    private void addOperandDoubleSuboperandsSearch(String agentIdtf, String operatorAddr, String operandAddr) {
+        Consumer<String> localConsumer = response -> {
+            System.out.println("addOperandDoubleSuboperandsSearch::Consumer");
+            String payload = getPayload(response);
+            JsonReader jsonReader = Json.createReader(new StringReader(payload));
+            JsonObject jsonObject = jsonReader.readObject();
+            jsonReader.close();
+            JsonArray addrs = jsonObject.getJsonArray("addrs");
+            for (JsonValue addr : addrs) {
+                String operand = Integer.toString(addr.asJsonArray().getInt(3));
+                String actualOperand = Integer.toString(addr.asJsonArray().getInt(5));
+                String role = Integer.toString(addr.asJsonArray().getInt(6));
+                stack.add(0, searchSystemIdtf(actualOperand));
+                stack.add(0, searchSystemIdtf(role));
+                stack.add(0, searchSystemIdtf(operand));
+                stack.add(0, getLinkContent(actualOperand, actualOperand));
+                agents.get(agentIdtf)
+                        .getOperator(operatorAddr)
+                        .getOperands()
+                        .get(operandAddr)
+                        .addOperand(new Operand(operand, new TreeSet<>()))
+                        .addOperand(new Operand(actualOperand, new TreeSet<>(Arrays.asList(role))));
+            }
+
+        };
+        Supplier<String> localSupplier = () -> {
+            System.out.println("addOperandDoubleSuboperandsSearch::Supplier");
+            return String.format(nestedOperandsTemplate, Integer.parseInt(operandAddr));
         };
         stack.add(0, new Pair<>(localConsumer, localSupplier));
     }
@@ -609,4 +655,5 @@ public class WebSocketClient {
     public static final String mainIdtfTemplate = "{\"id\": 129, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 72, \"alias\": \"_node_to_link\"}, {\"type\": \"type\", \"value\": 66, \"alias\": \"_link\"}], [{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_rel_to_edge\"}, {\"type\": \"alias\", \"value\": \"_node_to_link\"}], [{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_lang_to_link\"}, {\"type\": \"alias\", \"value\": \"_link\"}]], \"params\": {}}}";
     public static final String tripleTemplate = "{\"id\": 135, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_edge\"}, {\"type\": \"type\", \"value\": 65, \"alias\": \"_agent\"}]], \"params\": {}}}";
     public static final String fafTripleTemplate = "{\"id\": 139, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"_edge\"}, {\"type\": \"addr\", \"value\": %d, \"alias\": \"_agent\"}]], \"params\": {}}}";
+    private static final String nestedOperandsTemplate = "{\"id\": 148, \"type\": \"search_template\", \"payload\": {\"templ\": [[{\"type\": \"addr\", \"value\": %d}, {\"type\": \"type\", \"value\": 2256}, {\"type\": \"type\", \"value\": 0, \"alias\": \"_first_operand\"}], [{\"type\": \"alias\", \"value\": \"_first_operand\"}, {\"type\": \"type\", \"value\": 2256, \"alias\": \"edge_1_0\"}, {\"type\": \"type\", \"value\": 0, \"alias\": \"_actual_operand\"}], [{\"type\": \"type\", \"value\": 577, \"alias\": \"_argument_role\"}, {\"type\": \"type\", \"value\": 2256}, {\"type\": \"alias\", \"value\": \"edge_1_0\"}]], \"params\": {}}}";
 }

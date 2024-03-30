@@ -34,14 +34,16 @@ public class Operand implements Comparable<Operand> {
         return roles.toString().compareTo(o.roles.toString());
     }
 
-    public void addOperand(Operand operand) {
+    public Operand addOperand(Operand operand) {
         Operand existingOperand = subOperands.get(operand.getAddr());
         if (existingOperand != null) {
             for (String role : operand.getRoles()) {
                 existingOperand.addRole(role);
             }
+            return existingOperand;
         } else {
             subOperands.put(operand.getAddr(), operand);
+            return operand;
         }
     }
 
